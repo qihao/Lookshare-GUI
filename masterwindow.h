@@ -3,7 +3,7 @@
 
 #include <QWidget>
 #include <QPushButton>
-#include <QSpacerItem>
+#include <QFrame>
 #include <QHBoxLayout>
 #include <QVBoxLayout>
 #include <QStackedLayout>
@@ -11,7 +11,7 @@
 #include "homescreen.h"
 #include "status.h"
 #include "notepad.h"
-#include "filesystem.h"
+#include "storage.h"
 
 class MasterWindow : public QWidget
 {
@@ -22,24 +22,23 @@ public:
     ~MasterWindow();
 
 public slots:
-    void toggleClicked();
+    void homeClicked();
 
 private:
-    QPushButton *toggleButton;
-    QSpacerItem *spacerItem;
     HomeScreen *home;
 
-    QHBoxLayout *topLayout;
+    QFrame *frame;
+    QPushButton *homeButton;
+
+    QVBoxLayout *bottomLayout;
     QVBoxLayout *mainLayout;
 
 public:
-    // called by HomeScreen
     QWidget *start;
     Status *status;
     Notepad *notepad;
-    FileSystem *system;
+    Storage *storage;
 
-    int currentIndex;
     QStackedLayout *stackLayout;
 };
 

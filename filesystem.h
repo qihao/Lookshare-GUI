@@ -11,6 +11,8 @@
 #include <QHBoxLayout>
 #include <QVBoxLayout>
 
+class Storage;
+
 class FileSystem : public QWidget
 {
     Q_OBJECT
@@ -18,9 +20,9 @@ public:
     explicit FileSystem(QWidget *parent = 0);
     ~FileSystem();
 
-
-  //called by HomeScreen
     void update();
+    void back();
+    void showDataDir();
     
 public slots:
     void cloudClicked();
@@ -35,7 +37,6 @@ private:
     QLabel *dirLabel;
     QLabel *usageLabel;
     QPushButton *cloudButton;
-
     QPushButton *upButton;
     QPushButton *searchButton;
     QLineEdit *searchLine;
@@ -45,36 +46,37 @@ private:
     QTableView *systemView;
     QStandardItemModel *systemModel;
 
-    QHBoxLayout *statusLayout;
-    QHBoxLayout *searchLayout;
+    QHBoxLayout *top1Layout;
+    QHBoxLayout *top2Layout;
     QHBoxLayout *systemLayout;
     QVBoxLayout *mainLayout;
     
     bool isSystemView;
-    QList<QString> *fileList;
+    QList<QString> *searchFiles;
 
-    void initStatus();
-    void initSearch();
+    void initTop1();
+    void initTop2();
     void initSystem();
 
-    void updateStatus();
-    void updateSearch();
+    void updateCurrentDir();
+    void updateTop1();
+    void updateTop2();
     void updateSystem();
 
     void clearSystem();
-    void clearFiles(); 
-    void showDirLabel();
-    void showDir();
-    void showFiles();
+    void clearSearchFiles();
+    void showCurrentDir();
+    void showSearchFiles();
     void openFile(const QFileInfo &fileInfo);
-    void setUpButton();
 
-    // utility functions
-    QString escapePath(QString s);
+    QString addBackRef(QString s);
     void reverseFiles();
     static bool byType(QString s1, QString s2);
     static bool byName(QString s1, QString s2);
     static bool byTime(QString s1, QString s2);
+
+public:
+    Storage *storage;
 };
 
-#endif // System_H
+#endif // FileSystem_H

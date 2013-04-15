@@ -4,53 +4,61 @@
 #include <QStandardItem>
 #include <QFileIconProvider>
 #include <QIcon>
+#include <QFileInfo>
 #include <QDateTime>
 #include <QtAlgorithms>
 
-#include <QDebug>
-
 #include "stdlib.h"
 #include "filesystem.h"
+#include "storage.h"
 
 FileSystem::FileSystem(QWidget *parent) :
     QWidget(parent)
 {
-    initStatus();
-    initSearch();
+    initTop1();
+    initTop2();
     initSystem();
 
     mainLayout = new QVBoxLayout;
-    mainLayout->addLayout(statusLayout);
-    mainLayout->addLayout(searchLayout);
+    mainLayout->addLayout(top1Layout);
+    mainLayout->addLayout(top2Layout);
     mainLayout->addLayout(systemLayout);
     setLayout(mainLayout);
+
+    update();
 }
 
 FileSystem::~FileSystem()
 {
     delete currentDir;
-    delete fileList;
+    currentDir = NULL;
+
+    if (!searchFiles)
+    {
+        return;
+    }
+       
+    delete searchFiles;
+    searchFiles = NULL;
 }
 
-void FileSystem::initStatus()
+void FileSystem::initTop1()
 {
     dirLabel = new QLabel;
     usageLabel = new QLabel;
     cloudButton = new QPushButton;
     cloudButton->setText("Pull from Cloud");    
 
-    updateStatus();
-
-    statusLayout = new QHBoxLayout;
-    statusLayout->addWidget(dirLabel);
-    statusLayout->addWidget(usageLabel);
-    statusLayout->addWidget(cloudButton);
+    top1Layout = new QHBoxLayout;
+    top1Layout->addWidget(dirLabel);
+    top1Layout->addWidget(usageLabel);
+    top1Layout->addWidget(cloudButton);
 
     connect(cloudButton, SIGNAL(clicked()),
             this, SLOT(cloudClicked()));
 }
 
-void FileSystem::initSearch()
+void FileSystem::initTop2()
 {
     upButton = new QPushButton;
     upButton->setText("Up");
@@ -59,14 +67,12 @@ void FileSystem::initSearch()
     searchLine = new QLineEdit;
     clearButton = new QPushButton;
     clearButton->setText("Clear");
-    
-    updateSearch();
 
-    searchLayout = new QHBoxLayout;
-    searchLayout->addWidget(upButton);
-    searchLayout->addWidget(searchButton);
-    searchLayout->addWidget(searchLine);
-    searchLayout->addWidget(clearButton);
+    top2Layout = new QHBoxLayout;
+    top2Layout->addWidget(upButton);
+    top2Layout->addWidget(searchButton);
+    top2Layout->addWidget(searchLine);
+    top2Layout->addWidget(clearButton);
 
     connect(upButton, SIGNAL(clicked()),
             this, SLOT(upClicked()));
@@ -74,15 +80,13 @@ void FileSystem::initSearch()
             this, SLOT(searchClicked()));
     connect(searchLine, SIGNAL(textChanged(const QString &)),
             this, SLOT(lineEdited(const QString &)));
-    //connect(searchLine, SIGNAL(returnPressed()),
-    //        this, SLOT(searchClicked()));
     connect(clearButton, SIGNAL(clicked()),
             this, SLOT(clearClicked()));
 }
 
 void FileSystem::initSystem()
 {
-    fileList = new QList<QString>;
+    searchFiles = new QList<QString>;
 
     systemModel = new QStandardItemModel;
     systemModel->setColumnCount(3);
@@ -93,8 +97,6 @@ void FileSystem::initSystem()
     systemView = new QTableView;
     systemView->setModel(systemModel);
     systemView->verticalHeader()->setVisible(false);
-    
-    updateSystem();
 
     systemLayout = new QHBoxLayout;
     systemLayout->addWidget(systemView);
@@ -106,9 +108,10 @@ void FileSystem::initSystem()
             this, SLOT(indicatorClicked(int, Qt::SortOrder)));
 }
 
-void FileSystem::updateStatus()
+void FileSystem::updateTop1()
 {
-    dirLabel->setText("Local Memory/");
+    QDir dir(".");
+    dirLabel->setText(dir.relativeFilePath(currentDir->path()).append("/"));
 
     FILE *handler = popen("df -h | egrep '/$' | awk '{print $5}'", "r");
     QTextStream stream(handler, QIODevice::ReadOnly);
@@ -117,30 +120,36 @@ void FileSystem::updateStatus()
     pclose(handler);
 }
 
-void FileSystem::updateSearch()
+void FileSystem::updateTop2()
 {
-    upButton->setEnabled(false);
+    if (dirLabel->text().compare("Local Memory/") != 0)
+    {
+        upButton->setEnabled(true);
+    }
+    else
+    {
+        upButton->setEnabled(false);
+    }
+
     searchButton->setEnabled(false);
     searchLine->clear();
     clearButton->setEnabled(false);
 }
 
-void FileSystem::updateSystem()
+void FileSystem::updateCurrentDir()
 {
-    clearFiles();
-
     QString currentPath = "Local Memory";
     currentDir = new QDir(".");
     if (!currentDir->exists(currentPath))
     {
         currentDir->mkdir(currentPath);
     }
-    currentDir->setFilter(QDir::AllEntries | QDir::NoDotAndDotDot);
-    currentDir->setSorting(QDir::Time);
-    currentDir->cd(currentPath);
-    clearSystem();
-    showDir();
 
+    currentDir->cd(currentPath);
+}
+
+void FileSystem::updateSystem()
+{
     systemView->horizontalHeader()->setSortIndicatorShown(true);
     systemView->horizontalHeader()->setSortIndicator(1, Qt::AscendingOrder);
     systemView->horizontalHeader()->setSortIndicator(2, Qt::DescendingOrder);
@@ -148,14 +157,32 @@ void FileSystem::updateSystem()
     systemView->setColumnWidth(1, 180);
     systemView->setColumnWidth(2, 110);
 
+    clearSearchFiles();
+    clearSystem();
+
+    currentDir->setFilter(QDir::AllEntries | QDir::NoDotAndDotDot);
+    currentDir->setSorting(QDir::Time);
+    showCurrentDir();
     isSystemView = true;
 }
 
 void FileSystem::update()
 {
-    updateStatus();
-    updateSearch();
+    updateCurrentDir();
+    back();
+}
+
+void FileSystem::back()
+{
+    updateTop1();
+    updateTop2();
     updateSystem();
+}
+
+void FileSystem::showDataDir()
+{
+    currentDir->cd("data");
+    back();
 }
 
 void FileSystem::cloudClicked()
@@ -164,17 +191,14 @@ void FileSystem::cloudClicked()
 }
 
 void FileSystem::upClicked()
-{    
-    clearSystem();
+{
     currentDir->cdUp();
-    showDir();
-    showDirLabel();
-    setUpButton();
+    back();
 }
 
 void FileSystem::searchClicked()
 {
-    clearFiles();
+    clearSearchFiles();
 
     QString text = searchLine->text();
     dirLabel->setText("Search for '" + text + "'");
@@ -210,25 +234,19 @@ void FileSystem::searchClicked()
 
         if (!line.isEmpty() && line.compare("./Local Memory/") != 0)
         {
-            fileList->append(line);
+            searchFiles->append(line);
         }
     }
 
-    qSort(fileList->begin(), fileList->end(), byTime);
-    reverseFiles();
-
     pclose(handler);
 
-    systemView->horizontalHeader()->setSortIndicatorShown(true);
-    systemView->horizontalHeader()->setSortIndicator(1, Qt::AscendingOrder);
-    systemView->horizontalHeader()->setSortIndicator(2, Qt::DescendingOrder);
-
+    qSort(searchFiles->begin(), searchFiles->end(), byTime);
+    reverseFiles();
     clearSystem();
-    showFiles();    
+    showSearchFiles();  
+
     upButton->setEnabled(false);
     isSystemView = false;
-
-qDebug() << *fileList;
 }
 
 void FileSystem::lineEdited(const QString &s)
@@ -240,12 +258,7 @@ void FileSystem::lineEdited(const QString &s)
 
         if (!isSystemView)
         {
-            clearFiles();
-            clearSystem();
-            showDir();
-            showDirLabel();
-            setUpButton();
-            isSystemView = true;
+            back();
         }
     }
     else
@@ -263,12 +276,7 @@ void FileSystem::clearClicked()
 
     if (!isSystemView)
     {
-        clearFiles();
-        clearSystem();
-        showDir();
-        showDirLabel();
-        setUpButton();
-        isSystemView = true;
+        back();
     }
 }
 
@@ -281,18 +289,13 @@ void FileSystem::itemClicked(QModelIndex i)
     }
     else
     {
-        fileInfo.setFile(fileList->at(i.row()));
+        fileInfo.setFile(searchFiles->at(i.row()));
     }
 
     if (fileInfo.isDir())
     {
-        clearFiles();
-        clearSystem();
         currentDir->cd(fileInfo.absoluteFilePath());
-        showDir();
-        showDirLabel();
-        setUpButton();       
-        isSystemView = true;
+        back();    
     }
     else
     {
@@ -313,27 +316,50 @@ void FileSystem::indicatorClicked(int i, Qt::SortOrder order)
             else
             {
                 currentDir->setSorting(QDir::Type | QDir::Reversed);
-            }        
-        
-            clearSystem();
-            showDir();
+            }
         }
-
-        systemView->sortByColumn(i, order);
-    }
-    else if (!fileList->isEmpty())
-    {
-        if (i == 0)
-        {
-            qSort(fileList->begin(), fileList->end(), byType);    
-        } 
         else if (i == 1)
         {
-            qSort(fileList->begin(), fileList->end(), byName);
+            if (order == Qt::AscendingOrder)
+            {
+                currentDir->setSorting(QDir::Name);
+            }
+            else
+            {
+                currentDir->setSorting(QDir::Name | QDir::Reversed);
+            }  
         }
         else
         {
-            qSort(fileList->begin(), fileList->end(), byTime);
+            if (order == Qt::AscendingOrder)
+            {
+                currentDir->setSorting(QDir::Time | QDir::Reversed);
+            }
+            else
+            {
+                currentDir->setSorting(QDir::Time);
+            }
+        }
+  
+        systemView->sortByColumn(i, order);
+
+        clearSystem();
+        showCurrentDir();
+
+    }
+    else if (!searchFiles->isEmpty())
+    {
+        if (i == 0)
+        {
+            qSort(searchFiles->begin(), searchFiles->end(), byType);    
+        } 
+        else if (i == 1)
+        {
+            qSort(searchFiles->begin(), searchFiles->end(), byName);
+        }
+        else
+        {
+            qSort(searchFiles->begin(), searchFiles->end(), byTime);
         }
 
         if (order == Qt::DescendingOrder)
@@ -342,7 +368,7 @@ void FileSystem::indicatorClicked(int i, Qt::SortOrder order)
         }
 
         clearSystem();
-        showFiles();
+        showSearchFiles();
     }
 }
 
@@ -351,18 +377,12 @@ void FileSystem::clearSystem()
     systemModel->removeRows(0, systemModel->rowCount());
 }
 
-void FileSystem::clearFiles()
+void FileSystem::clearSearchFiles()
 {
-    fileList->clear();
+    searchFiles->clear();
 }
 
-void FileSystem::showDirLabel()
-{
-    QDir dir(".");
-    dirLabel->setText(dir.relativeFilePath(currentDir->path()).append("/"));
-}
-
-void FileSystem::showDir()
+void FileSystem::showCurrentDir()
 {
     QList<QFileInfo> infoList = currentDir->entryInfoList();
 
@@ -377,15 +397,14 @@ void FileSystem::showDir()
         itemList.append(new QStandardItem(QIcon(icon), QString("")));
         itemList.append(new QStandardItem(QString(name)));
         itemList.append(new QStandardItem(QString(date)));
-
         systemModel->appendRow(itemList);
     }
 }
 
-void FileSystem::showFiles()
+void FileSystem::showSearchFiles()
 {    
     QFileIconProvider iconPro;
-    foreach (QString filePath, *fileList)
+    foreach (QString filePath, *searchFiles)
     {
         QFileInfo fileInfo(filePath);
         QIcon icon = iconPro.icon(fileInfo);
@@ -404,35 +423,25 @@ void FileSystem::showFiles()
 void FileSystem::openFile(const QFileInfo &fileInfo)
 {
     QString suffix = fileInfo.suffix();
-    QString path = escapePath(fileInfo.filePath());
+    QString path = addBackRef(fileInfo.filePath());
 
-    if (suffix.compare("cpp") == 0 || 
-        suffix.compare("h") == 0 || 
-        suffix.compare("rtf") == 0 || 
-        suffix.compare("txt") == 0)
+    if (suffix.compare("pdf") == 0)
     {
-        system(path.prepend("gedit ").toStdString().c_str());
-    } 
-    else if (suffix.compare("pdf") == 0)
-    {
-        system(path.prepend("evince ").toStdString().c_str());
-    } 
-    else if (suffix.compare("odt") == 0 || 
-        suffix.compare("doc") == 0 || 
-        suffix.compare("docx") == 0)
-    {
-        system(path.prepend("soffice ").toStdString().c_str());
+        storage->mpdf->loadPdf(path);
+        storage->stackLayout->setCurrentIndex(2);
     }
-    else if (suffix.compare("html") == 0)
+    else if (suffix.compare("3gp") == 0 || 
+        suffix.compare("avi") == 0 || 
+        suffix.compare("dat") == 0 || 
+        suffix.compare("flv") == 0 ||
+        suffix.compare("mkv") == 0 || 
+        suffix.compare("mov") == 0 || 
+        suffix.compare("mp4") == 0 ||
+        suffix.compare("mpeg") == 0 || 
+        suffix.compare("wmv") == 0)
     {
-        system(path.prepend("firefox ").toStdString().c_str());
-    }
-    else if (suffix.compare("jpg") == 0 || 
-        suffix.compare("png") == 0 || 
-        suffix.compare("tiff") == 0 || 
-        suffix.compare("gif") == 0)
-    {
-        system(path.prepend("xdg-open ").toStdString().c_str());
+        storage->mplayer->loadVideo(path);
+        storage->stackLayout->setCurrentIndex(1);
     }
     else
     {
@@ -440,19 +449,7 @@ void FileSystem::openFile(const QFileInfo &fileInfo)
     }
 }
 
-void FileSystem::setUpButton()
-{
-    if (dirLabel->text().compare("Local Memory/") != 0)
-    {
-        upButton->setEnabled(true);
-    }
-    else
-    {
-        upButton->setEnabled(false);
-    }
-}
-
-QString FileSystem::escapePath(QString s)
+QString FileSystem::addBackRef(QString s)
 {
     s.replace(" ", "\\ ");
     return s;
@@ -460,9 +457,9 @@ QString FileSystem::escapePath(QString s)
 
 void FileSystem::reverseFiles()
 {    
-    for (int i = 0; i < fileList->size() / 2; i++)
+    for (int i = 0; i < searchFiles->size() / 2; i++)
     {
-        fileList->swap(i, fileList->size() - i - 1);
+        searchFiles->swap(i, searchFiles->size() - i - 1);
     }
 }
 

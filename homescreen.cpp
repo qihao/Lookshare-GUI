@@ -1,50 +1,46 @@
 #include "homescreen.h"
 #include "masterwindow.h"
 
-HomeScreen::HomeScreen(QWidget *parent) :
-    QWidget(parent)
+HomeScreen::HomeScreen(QWidget *parent)
+    : QWidget(parent)
 {
     linkButton = new QPushButton;
-    statusButton = new QPushButton;
-    internetButton = new QPushButton;
-    systemButton = new QPushButton;
-    dewButton = new QPushButton;
-    notepadButton = new QPushButton;
-    calendarButton = new QPushButton;
-    stockButton = new QPushButton;
-    clockButton = new QPushButton;
-
     linkButton->setText("Link");
+    statusButton = new QPushButton;
     statusButton->setText("Status");
+    internetButton = new QPushButton;
     internetButton->setText("Internet");
-    systemButton->setText("Local File Storage");
+    storageButton = new QPushButton;
+    storageButton->setText("Storage");
+    dewButton = new QPushButton;
     dewButton->setText("Dew");
+    notepadButton = new QPushButton;
     notepadButton->setText("Notepad");
+    calendarButton = new QPushButton;
     calendarButton->setText("Calendar");
+    stockButton = new QPushButton;
     stockButton->setText("Stocks");
+    clockButton = new QPushButton;
     clockButton->setText("Clock");
 
     gridLayout = new QGridLayout;
-    gridLayout->setHorizontalSpacing(25);
-    gridLayout->setContentsMargins(0, 0, 0, 0);
-
-    gridLayout->addWidget(linkButton, 0, 0, 1, 1);
-    gridLayout->addWidget(statusButton, 0, 1, 1, 1);
-    gridLayout->addWidget(internetButton, 0, 2, 1, 1);
-    gridLayout->addWidget(systemButton, 1, 0, 1, 1);
-    gridLayout->addWidget(dewButton, 1, 1, 1, 1);
-    gridLayout->addWidget(notepadButton, 1, 2, 1, 1);
-    gridLayout->addWidget(calendarButton, 2, 0, 1, 1);
-    gridLayout->addWidget(stockButton, 2, 1, 1, 1);
-    gridLayout->addWidget(clockButton, 2, 2, 1, 1);
+    gridLayout->addWidget(linkButton, 0, 0, Qt::AlignHCenter);
+    gridLayout->addWidget(statusButton, 0, 1, Qt::AlignHCenter);
+    gridLayout->addWidget(internetButton, 0, 2, Qt::AlignHCenter);
+    gridLayout->addWidget(storageButton, 1, 0, Qt::AlignHCenter);
+    gridLayout->addWidget(dewButton, 1, 1, Qt::AlignHCenter);
+    gridLayout->addWidget(notepadButton, 1, 2, Qt::AlignHCenter);
+    gridLayout->addWidget(calendarButton, 2, 0, Qt::AlignHCenter);
+    gridLayout->addWidget(stockButton, 2, 1, Qt::AlignHCenter);
+    gridLayout->addWidget(clockButton, 2, 2, Qt::AlignHCenter);
     setLayout(gridLayout);
 
     connect(statusButton, SIGNAL(clicked()),
             this, SLOT(statusClicked()));
     connect(notepadButton, SIGNAL(clicked()),
             this, SLOT(notepadClicked()));
-    connect(systemButton, SIGNAL(clicked()),
-            this, SLOT(systemClicked()));
+    connect(storageButton, SIGNAL(clicked()),
+            this, SLOT(storageClicked()));
 }
 
 HomeScreen::~HomeScreen()
@@ -54,20 +50,17 @@ HomeScreen::~HomeScreen()
 void HomeScreen::statusClicked()
 {
     masterWindow->status->update();
-    masterWindow->currentIndex = 2;
-    masterWindow->stackLayout->setCurrentIndex(masterWindow->currentIndex);
+    masterWindow->stackLayout->setCurrentIndex(2);
 }
 
 void HomeScreen::notepadClicked()
 {
     masterWindow->notepad->update();
-    masterWindow->currentIndex = 3;
-    masterWindow->stackLayout->setCurrentIndex(masterWindow->currentIndex);
+    masterWindow->stackLayout->setCurrentIndex(3);
 }
 
-void HomeScreen::systemClicked()
+void HomeScreen::storageClicked()
 {
-    masterWindow->system->update();
-    masterWindow->currentIndex = 4;
-    masterWindow->stackLayout->setCurrentIndex(masterWindow->currentIndex);
+    masterWindow->storage->update();
+    masterWindow->stackLayout->setCurrentIndex(4);
 }

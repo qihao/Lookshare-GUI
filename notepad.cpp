@@ -1,19 +1,28 @@
 #include <QDir>
 #include <QFile>
 #include <QTextStream>
-
-#include "notepad.h"
+#include <QDebug>
+#include "masterwindow.h"
 
 Notepad::Notepad(QWidget *parent) :
     QWidget(parent)
 {
     textEdit = new QPlainTextEdit(this);
-    textEdit->setGeometry(QRect(25, 25, 350, 150));
     textEdit->setFont(QFont("Arial", 12));
 
-    saveButton = new QPushButton(this);
-    saveButton->setGeometry(QRect(150, 200, 100, 25));
+    topLayout = new QHBoxLayout; 
+    topLayout->addWidget(textEdit, 0, Qt::AlignHCenter);
+
+    saveButton = new QPushButton;
     saveButton->setText("Save");
+
+    bottomLayout = new QHBoxLayout; 
+    bottomLayout->addWidget(saveButton, 0, Qt::AlignHCenter);
+
+    mainLayout = new QVBoxLayout;
+    mainLayout->addLayout(topLayout);
+    mainLayout->addLayout(bottomLayout);
+    setLayout(mainLayout);
 
     update();
 
@@ -27,48 +36,51 @@ Notepad::~Notepad()
 
 void Notepad::update()
 {
+    currentPath = "Local Memory/data/";
     textEdit->clear();
-
-    currentPath = "./Local Memory/data/";
-    QDir currentDir(".");
-    // date folder exists
-    if (!currentDir.exists(currentPath))
-    {
-        currentDir.mkpath(currentPath);
-        fileNumber = 0;
-    }
-    else// not exists
-    {
-        currentDir.cd(currentPath);
-        // data folder empty
-	if (currentDir.entryList(QDir::AllEntries | QDir::NoDotAndDotDot).isEmpty())
-        {
-            fileNumber = 0;
-        }
-        else// not empty
-        {
-            int max = 0;
-            foreach (QString s, currentDir.entryList())
-            {
-                if (s.toInt() > max)
-                {
-                    max = s.toInt();
-                }
-            }
-        	
-            fileNumber = max + 1;
-        }
-    }    
 }
 
 void Notepad::saveClicked()
 {
-    QString fileName = currentPath + QString("%1.txt").arg(fileNumber);
+    QString fileName = getFilename();
     QFile file(fileName);
     file.open(QFile::WriteOnly | QFile::Text);
     QTextStream stream(&file);
     stream << textEdit->toPlainText();
     file.close();
 
-    fileNumber++;
+    masterWindow->storage->update();
+    masterWindow->storage->system->showDataDir();
+    masterWindow->stackLayout->setCurrentIndex(4);
+}
+
+QString Notepad::getFilename()
+{
+    QDir currentDir(".");
+    if (!currentDir.exists(currentPath))
+    {
+        currentDir.mkpath(currentPath);
+    }
+
+    currentDir.cd(currentPath);
+    if (currentDir.entryList(QDir::AllEntries | QDir::NoDotAndDotDot).isEmpty())
+    {
+        return "0.txt";
+    }
+    else
+    {
+        for (int i = 0; i < INT_MAX; i++)
+        {
+            QString fileName = currentPath + QString("%1.txt").arg(i);
+            QFile file(fileName);
+            if (!file.exists())
+            {
+                return fileName;
+            }
+            else
+            {
+                return "0.txt";
+            }
+        }
+    }
 }

@@ -5,10 +5,6 @@
 #include <QPushButton>
 #include <QGridLayout>
 
-#include "status.h"
-#include "notepad.h"
-#include "filesystem.h"
-
 class MasterWindow;
 
 class HomeScreen : public QWidget
@@ -22,13 +18,13 @@ public:
 public slots:
     void notepadClicked();
     void statusClicked();
-    void systemClicked();
+    void storageClicked();
 
 private:
     QPushButton *linkButton;
     QPushButton *statusButton;
     QPushButton *internetButton;
-    QPushButton *systemButton;
+    QPushButton *storageButton;
     QPushButton *dewButton;
     QPushButton *notepadButton;
     QPushButton *calendarButton;
@@ -38,7 +34,6 @@ private:
     QGridLayout *gridLayout;
 
 public:
-    // keep a handle of MasterWindow to access stacked layout
     MasterWindow *masterWindow;
 };
 

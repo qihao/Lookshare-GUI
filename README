@@ -11,5 +11,9 @@ $ make -j 4
 $ cd Lookshare-GUI
 $ qmake
 $ make
-$ ./MasterWindow
+$ ./MasterWindows
+
+3. Install MPlayer package
+$ sudo apt-get intall mplayer
+
 

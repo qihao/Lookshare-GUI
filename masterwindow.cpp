@@ -5,59 +5,63 @@ MasterWindow::MasterWindow(QWidget *parent)
 {
     resize(400, 300);
     setWindowTitle("Lookshare");
-    
-    toggleButton = new QPushButton;
-    toggleButton->setText("X");
-    spacerItem = new QSpacerItem(25, 25, 
-            QSizePolicy::Expanding, QSizePolicy::Minimum);
-
-    topLayout = new QHBoxLayout;
-    topLayout->addWidget(toggleButton);
-    topLayout->addItem(spacerItem);
-
+ 
     start = new QWidget;
     home = new HomeScreen;
     status = new Status;
     notepad = new Notepad;
-    system = new FileSystem;
+    storage = new Storage;
 
     home->masterWindow = this;
+    notepad->masterWindow = this;
 
     stackLayout = new QStackedLayout;
-    stackLayout->addWidget(start);
-    stackLayout->addWidget(home);
-    stackLayout->addWidget(status);
-    stackLayout->addWidget(notepad);
-    stackLayout->addWidget(system);
+    stackLayout->addWidget(start);   // 0
+    stackLayout->addWidget(home);    // 1
+    stackLayout->addWidget(status);  // 2
+    stackLayout->addWidget(notepad); // 3
+    stackLayout->addWidget(storage); // 4
+
+    frame = new QFrame;
+    frame->setFrameShape(QFrame::HLine);
+    frame->setFrameShadow(QFrame::Raised);
+    homeButton = new QPushButton;
+    homeButton->setText("Home");
+
+    bottomLayout = new QVBoxLayout;
+    bottomLayout->addWidget(frame);
+    bottomLayout->addWidget(homeButton, 0, Qt::AlignHCenter);
 
     mainLayout = new QVBoxLayout;
-    mainLayout->addLayout(topLayout);
     mainLayout->addLayout(stackLayout);
+    mainLayout->addLayout(bottomLayout);
     setLayout(mainLayout);
 
-    currentIndex = 0;
-    stackLayout->setCurrentIndex(currentIndex);
+    stackLayout->setCurrentIndex(0);
 
-    connect(toggleButton, SIGNAL(clicked()),
-            this, SLOT(toggleClicked()));
+    connect(homeButton, SIGNAL(clicked()),
+            this, SLOT(homeClicked()));
 }
 
 MasterWindow::~MasterWindow()
 {
 }
 
-void MasterWindow::toggleClicked()
+void MasterWindow::homeClicked()
 {
-/*
-    if (currentIndex == 1)
+
+    if (stackLayout->currentIndex() == 4)
     {
-        currentIndex = 0;
+        if (storage->stackLayout->currentIndex() == 1)
+        {
+            storage->mplayer->deleteVideo();
+        }
+        if (storage->stackLayout->currentIndex() == 2)
+        {
+            storage->mpdf->deletePdf();
+        }
     }
-    else
-    {
-        currentIndex = 1;
-    }
-*/
-    currentIndex = 1;
-    stackLayout->setCurrentIndex(currentIndex);
+
+    stackLayout->setCurrentIndex(1);
 }
+

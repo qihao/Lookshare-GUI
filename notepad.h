@@ -4,6 +4,10 @@
 #include <QWidget>
 #include <QPlainTextEdit>
 #include <QPushButton>
+#include <QHBoxLayout>
+#include <QVBoxLayout>
+
+class MasterWindow;
 
 class Notepad : public QWidget
 {
@@ -13,7 +17,6 @@ public:
     explicit Notepad(QWidget *parent = 0);
     ~Notepad();
 
-    // called by HomeScreen
     void update();
 
 public slots:
@@ -23,8 +26,16 @@ private:
     QPlainTextEdit *textEdit;
     QPushButton *saveButton;
 
-    int fileNumber;
+    QHBoxLayout *topLayout;
+    QHBoxLayout *bottomLayout;
+    QVBoxLayout *mainLayout; 
+
     QString currentPath;
+
+    QString getFilename();
+
+public:
+    MasterWindow *masterWindow;
 };
 
 #endif // NOTEPAD_H

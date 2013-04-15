@@ -13,16 +13,33 @@ TEMPLATE = app
 
 
 SOURCES += main.cpp\
-        masterwindow.cpp \
+    masterwindow.cpp \
     homescreen.cpp \
     notepad.cpp \
     status.cpp \
-    filesystem.cpp
+    storage.cpp \
+    filesystem.cpp \
+    mplayer.cpp \
+    mpdf.cpp
 
 HEADERS  += masterwindow.h \
     homescreen.h \
     notepad.h \
     status.h \
-    filesystem.h
+    storage.h \
+    filesystem.h \
+    mplayer.h \
+    mpdf.h
 
 FORMS +=
+
+LIBS += -L $$PWD/mupdf/lib \
+    -lfitz \ 
+    -lfreetype \
+    -lopenjpeg \
+    -ljbig2dec \
+    -ljpeg \
+    -lpng \
+    -lm 
+INCLUDEPATH += $$PWD/mupdf/inc
+

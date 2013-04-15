@@ -13,7 +13,6 @@ public:
     explicit Status(QWidget *parent = 0);
     ~Status();
 
-  // called by HomeScreen
     void update();
 
 private:
