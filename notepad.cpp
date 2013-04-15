@@ -77,10 +77,6 @@ QString Notepad::getFilename()
             {
                 return fileName;
             }
-            else
-            {
-                return "0.txt";
-            }
         }
     }
 }
